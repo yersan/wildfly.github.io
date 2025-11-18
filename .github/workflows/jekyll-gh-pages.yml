@@ -51,6 +51,8 @@ jobs:
         working-directory: _wildfly-doc-indexer
         run: |
           mvn clean package
+          
+          java -jar ./target/wildfly-doc-indexer.jar --doc-base-dir=../ --scan-dirs=38,prospero,bootablejar,galleon,galleon-plugins --output-file-path=../wildfly-doc-index.json
 
      # 5. Standard Jekyll build for GitHub pages
       - name: Setup Pages
