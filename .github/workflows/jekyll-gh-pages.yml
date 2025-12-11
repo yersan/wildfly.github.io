@@ -27,7 +27,7 @@ jobs:
       WILDFLY_DOC_DIR_VERSION: "38"
 
     steps:
-    # 1. Checkout Jekyll repository
+    # 1. Checkout
     - name: Checkout
       uses: actions/checkout@v4
 

@@ -59,14 +59,19 @@
       try {
         this.setButtonState(true);
 
-        // Define all index files to load
-        // Those indexes files should be available, otherwise, there could be a delay by loading them
-        const indexFiles = [
-          'wildfly-doc-index.json',
-          'wildfly-glow-doc-index.json',
-          'wildfly-container-doc-index.json',
-          'wildfly-operator-doc-index.json',
-          'wildfly-s2i-doc-index.json'
+        // Define all index files to load with their URL context configurations
+        // Those indexes files should be available using this repository context path, even if these indexes are supplied
+        // by other repositories, for example, wildly-glow index is supplied from a different repo.
+        // If the index is not available, there will be a small delay loading them, but the search will still work with
+        // the other available indexes. The urlContext property will be prepended to each document's URL when importing
+        // from that index file. This is to allow mounting the urls defined in the fetched index file under a specific path
+        // relative to the current documentation site root.
+        const indexConfigs = [
+          { file: 'wildfly-doc-index.json', urlContext: '' },
+          { file: 'wildfly-glow-doc-index.json', urlContext: 'wildfly-glow/' },
+          { file: 'wildfly-container-doc-index.json', urlContext: 'wildfly-container/' },
+          { file: 'wildfly-operator-doc-index.json', urlContext: 'wildfly-operator/' },
+          { file: 'wildfly-s2i-doc-index.json', urlContext: 'wildfly-s2i/' }
         ];
 
         // Initialize FlexSearch Document index
@@ -95,18 +100,30 @@
 
         // Load and merge all index files
         const allDocuments = [];
-        for (const indexFile of indexFiles) {
+        for (const indexConfig of indexConfigs) {
           try {
-            const response = await fetch(indexFile);
+            const response = await fetch(indexConfig.file);
             if (response.ok) {
               const documents = await response.json();
-              allDocuments.push(...documents);
-              console.log(`Loaded ${documents.length} documents from ${indexFile}`);
+              
+              // Apply URL context to each document if specified
+              const processedDocuments = documents.map(doc => {
+                if (indexConfig.urlContext && indexConfig.urlContext.trim() !== '') {
+                  return {
+                    ...doc,
+                    url: indexConfig.urlContext + doc.url
+                  };
+                }
+                return doc;
+              });
+              
+              allDocuments.push(...processedDocuments);
+              console.log(`Loaded ${documents.length} documents from ${indexConfig.file}${indexConfig.urlContext ? ` with URL context "${indexConfig.urlContext}"` : ''}`);
             } else {
-              console.warn(`Failed to load ${indexFile}: HTTP ${response.status}`);
+              console.warn(`Failed to load ${indexConfig.file}: HTTP ${response.status}`);
             }
           } catch (error) {
-            console.warn(`Failed to load ${indexFile}:`, error.message);
+            console.warn(`Failed to load ${indexConfig.file}. Index will be ignored. `, error.message);
           }
         }
 
